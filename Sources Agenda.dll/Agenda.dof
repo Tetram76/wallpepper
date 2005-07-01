@@ -90,18 +90,18 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=..
-UnitOutputDir=dcu
+OutputDir=
+UnitOutputDir=
 PackageDLLOutputDir=
 PackageDCPOutputDir=
 SearchPath=
-Packages=vcl;rtl;vclx;indy;inet;xmlrtl;vclie;inetdbbde;inetdbxpress;dbrtl;dsnap;dsnapcon;vcldb;soaprtl;VclSmp;dbexpress;dbxcds;inetdb;bdertl;vcldbx;webdsnap;websnap;adortl;ibxpress;teeui;teedb;tee;dss;visualclx;visualdbclx;vclactnband;vclshlctrls;dclOfficeXP;MediaKit;JvUIBPack_D7;VirtualTreesD7
+Packages=vcl;rtl;vclx;indy;inet;xmlrtl;vclie;inetdbbde;inetdbxpress;dbrtl;dsnap;dsnapcon;vcldb;soaprtl;VclSmp;dbexpress;dbxcds;inetdb;bdertl;vcldbx;webdsnap;websnap;adortl;ibxpress;teeui;teedb;tee;dss;visualclx;visualdbclx;vclactnband;vclshlctrls;dclOfficeXP;MediaKit;JvUIBPack_D7;VirtualTreesD7;SynEdit_D7;JvUIBD7R
 Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/debug
-HostApplication=G:\Programmation\MEDIA.KIT\WallPap 1.0\WallPepper.exe
+RunParams=
+HostApplication=
 Launcher=
 UseLauncher=0
 DebugCWD=
@@ -110,7 +110,7 @@ ActiveLang=
 ProjectLang=
 RootDir=D:\Programmation\Borland\Delphi7\Bin\
 [Version Info]
-IncludeVerInfo=0
+IncludeVerInfo=1
 AutoIncBuild=0
 MajorVer=1
 MinorVer=0

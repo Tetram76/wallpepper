@@ -12,9 +12,9 @@ File_9=SourceModule,'G:\Programmation\Compos Perso\TrayIcon\TrayIcon.pas',0,1,71
 
 [Modules]
 Module0=G:\Programmation\MEDIA.KIT\WallPap 1.0\SDK\UInterfacePluginCommandes.pas
-Module1=G:\Programmation\MEDIA.KIT\WallPap 1.0\SDK\UInterfacePlugIn.pas
-Module2=G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources Agenda.dll\UMain.pas
-Module3=G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources CompteRebours.dll\UMain.pas
+Module1=G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources CompteRebours.dll\UMain.pas
+Module2=G:\Programmation\MEDIA.KIT\WallPap 1.0\SDK\UInterfacePlugIn.pas
+Module3=G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources Agenda.dll\UMain.pas
 Module4=G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources Agenda.dll\Agenda.dpr
 Module5=G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources CompteRebours.dll\CompteRebours.dpr
 Count=6
@@ -25,17 +25,17 @@ ModuleType=SourceModule
 FormState=0
 FormOnTop=0
 
+[G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources CompteRebours.dll\UMain.pas]
+ModuleType=SourceModule
+FormState=0
+FormOnTop=0
+
 [G:\Programmation\MEDIA.KIT\WallPap 1.0\SDK\UInterfacePlugIn.pas]
 ModuleType=SourceModule
 FormState=0
 FormOnTop=0
 
 [G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources Agenda.dll\UMain.pas]
-ModuleType=SourceModule
-FormState=0
-FormOnTop=0
-
-[G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources CompteRebours.dll\UMain.pas]
 ModuleType=SourceModule
 FormState=0
 FormOnTop=0
@@ -98,7 +98,7 @@ LeftPanelData=000004000000000000000000000000000000000000000000000100000000000000
 RightPanelSize=0
 BottomPanelSize=0
 BottomPanelClients=MessageView@EditWindow0
-BottomPanelData=00000400010000000B0000004D6573736167655669657700000000000000000000000000000000000100000000000000000B0000004D65737361676556696577FFFFFFFF
+BottomPanelData=00000400010000000B0000004D65737361676556696577000000000000000000000000000000000001000000000000000000000000FFFFFFFF
 
 [View0]
 Module=G:\Programmation\MEDIA.KIT\WallPap 1.0\Sources CompteRebours.dll\CompteRebours.dpr
@@ -532,26 +532,6 @@ DockHostCount=2
 [DockSite0]
 DockSiteType=1
 Create=1
-Visible=1
-State=0
-Left=4
-Top=109
-Width=347
-Height=704
-MaxLeft=-1
-MaxTop=-1
-ClientWidth=339
-ClientHeight=678
-TBDockHeight=278
-LRDockWidth=411
-Dockable=1
-TabPosition=0
-ActiveTab=Gestionnaire de projet
-TabDockClients=ProjectManager,PropertyInspector,ObjectTree
-
-[DockSite1]
-DockSiteType=1
-Create=1
 Visible=0
 State=0
 Left=353
@@ -568,6 +548,26 @@ Dockable=1
 TabPosition=0
 ActiveTab=Liste des points de suivi
 TabDockClients=WatchWindow,LocalVarsWindow
+
+[DockSite1]
+DockSiteType=1
+Create=1
+Visible=1
+State=0
+Left=4
+Top=109
+Width=347
+Height=704
+MaxLeft=-1
+MaxTop=-1
+ClientWidth=339
+ClientHeight=678
+TBDockHeight=278
+LRDockWidth=411
+Dockable=1
+TabPosition=0
+ActiveTab=Gestionnaire de projet
+TabDockClients=ProjectManager,PropertyInspector,ObjectTree
 
 [ActiveProject]
 ActiveProject=6

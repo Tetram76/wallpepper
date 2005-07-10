@@ -121,6 +121,7 @@ type
     HorairesFixe: array of RHoraireFixe;
     Plugins: array of RPlugin;
     ActionDoubleClick: Integer;
+    ActionPluginDoubleClick: string;
   end;
 
 function GetIni(out Old: Boolean; ForceIniFile: Boolean = False): IOptionsWriter;
@@ -240,6 +241,7 @@ begin
       AntiAliasing := ReadBool('Options', 'Aliasing', True);
       ResizeDesktop := ReadBool('Options', 'ResizeDesktop', True);
       ActionDoubleClick := ReadInteger('Options', 'ActionDoubleClick', 1);
+      ActionPluginDoubleClick := ReadString('Options', 'ActionPluginDoubleClick', '');
       DemarrageWindows := ReadBool('Options', 'WZ', True);
       Interval := ReadInteger('Options', 'Interval', 60);
       TailleHistorique := ReadInteger('Options', 'Historique', 10);
@@ -433,7 +435,8 @@ begin
           if AddPlugin then begin
             SetLength(Plugins, Succ(Length(Plugins)));
             Plugins[Pred(Length(Plugins))].Chemin := sr.Name;
-            LoadPlugin(MainProg, Plugins[Pred(Length(Plugins))]);
+            if not LoadPlugin(MainProg, Plugins[Pred(Length(Plugins))]) then
+              SetLength(Plugins, Pred(Length(Plugins)));
           end;
           i := FindNext(sr);
         end;

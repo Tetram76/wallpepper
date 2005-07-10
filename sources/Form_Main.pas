@@ -7,13 +7,14 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, tlhelp32, Registry, Menus, GraphicEx, UInterfacePlugIn,
-  ActnList, StdActns, TrayIcon, Divers, ExtCtrls,  UnrarComp, ZipMstr, ShellAPI, StdCtrls, ExtDlgs, UOptions, UInterfaceChange, WinInet;
+  ActnList, StdActns, TrayIcon, Divers, ExtCtrls, UnrarComp, ZipMstr, ShellAPI, StdCtrls, ExtDlgs, UOptions, UInterfaceChange, WinInet;
 
 const
   DLLConf = 'WPConf.dll';
 
 type
-  ISuspend = interface end;
+  ISuspend = interface
+  end;
   TSuspend = class(TInterfacedObject, ISuspend)
     FActionList: TActionList;
     constructor Create(ActionList: TActionList);
@@ -29,6 +30,11 @@ type
     procedure Execute; override;
   private
     procedure DoEvent;
+  end;
+
+  RPluginCommandes = record
+    Plugin: PPlugin;
+    IdCommande: Integer;
   end;
 
   TFond = class(TForm, IChange, IValideImage, IMainProg, IEvenements)
@@ -68,6 +74,8 @@ type
     Vrifierlaversion1: TMenuItem;
     Rafraichir: TAction;
     Rafraichir1: TMenuItem;
+    N6: TMenuItem;
+    ExecCommandePlugin: TAction;
     procedure FormCreate(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -91,6 +99,7 @@ type
     procedure ChoisirImageExecute(Sender: TObject);
     procedure Vrifierlaversion1Click(Sender: TObject);
     procedure RafraichirExecute(Sender: TObject);
+    procedure ExecCommandePluginExecute(Sender: TObject);
   private
     { Déclarations privées }
     FDebug: RDebug;
@@ -106,6 +115,9 @@ type
     FCurrentImage, FCurrentArchive, FImage: string;
     FThreadCheckTime: TThreadCheckTime;
     FActionDoubleClick: TAction;
+
+    PluginCommandes: array of RPluginCommandes;
+
     procedure LoadOptions;
     procedure RefreshIconCaption;
     procedure RestreintHistorique;
@@ -119,7 +131,7 @@ type
 
     procedure WriteLog(Chaine: string);
     function ExtraitArchive(var Image: string; out Archive, Fichier: string): Boolean;
-    function ChooseImage: String;
+    function ChooseImage: string;
     function FindActions(Index: Integer): TAction;
 
     function PluginsForceChange(Declenchement: TChangeType; Exclusion: Boolean): Boolean; stdcall;
@@ -152,6 +164,9 @@ type
 
     function PluginForcerImage(var Archive, Fichier: string; out UseHistorique: Boolean): Boolean;
     procedure WriteImageLog(i: Integer; Fichier: string);
+    procedure MenuItemExecPluginCommandeClick(Sender: TObject);
+    function FindIndexPluginCommande(Ident: string): Integer;
+    procedure ExecutePluginCommande(IdPluginCommande: Integer);
   public
     { Déclarations publiques }
   end;
@@ -161,7 +176,7 @@ var
 
 implementation
 
-uses DateUtils, CheckVersionNet, RNDGen;
+uses DateUtils, CheckVersionNet, RNDGen, UInterfacePluginCommandes;
 
 {$R *.DFM}
 
@@ -175,7 +190,7 @@ end;
 const
   TitleAPP = 'Teträm Corp - WallPepper';
 
-{ TThreadCheckTime }
+  { TThreadCheckTime }
 
 procedure TThreadCheckTime.Execute;
 begin
@@ -204,6 +219,8 @@ procedure TFond.FormCreate(Sender: TObject);
 var
   dummy: array[0..MAX_PATH] of Char;
 begin
+  SetLength(PluginCommandes, 0);
+
   TraiteLigneCommande;
   ShowWindow(Application.Handle, SW_Hide);
 
@@ -248,12 +265,12 @@ procedure TFond.ChargeListeFichiers;
   function IsArchive(Fichier: string): Boolean;
   var
     i: Integer;
-    Ext: String;
+    Ext: string;
   begin
     i := 0;
     Result := False;
     Ext := LowerCase(ExtractFileExt(Fichier));
-    while not Result and (i <  Length(FOptions.Archives)) do begin
+    while not Result and (i < Length(FOptions.Archives)) do begin
       Result := FOptions.Archives[i] = Ext;
       Inc(i);
     end;
@@ -262,12 +279,12 @@ procedure TFond.ChargeListeFichiers;
   function FichierBon(Fichier: string): Boolean;
   var
     i: Integer;
-    Ext: String;
+    Ext: string;
   begin
     i := 0;
     Result := False;
     Ext := LowerCase(ExtractFileExt(Fichier));
-    while not Result and (i <  Length(FOptions.Extensions)) do begin
+    while not Result and (i < Length(FOptions.Extensions)) do begin
       Result := FOptions.Extensions[i] = Ext;
       Inc(i);
     end;
@@ -276,7 +293,7 @@ procedure TFond.ChargeListeFichiers;
 var
   FOut: TextFile;
 
-  procedure ScanArchive(Path: String; SousRep: Boolean);
+  procedure ScanArchive(Path: string; SousRep: Boolean);
   var
     ext: string;
     i: Integer;
@@ -296,29 +313,33 @@ var
             ShowMessage('Impossible de lire ' + Path + #13#10 + Exception(ExceptObject).Message);
             Exit;
           end;
-          else raise;
+          else
+            raise;
         end;
-        for i := 0 to Pred(Unrar1.RarEntries.Count) do with Unrar1.RarEntries[i] do
-          if not IsDirectory and (SousRep or (ExtractFilePath(FileName) = '')) and FichierBon(FileName) then begin
-            Write(FOut, #1 + FileName + '|' + Path);
-            Inc(FFichiersCount);
-          end;
+        for i := 0 to Pred(Unrar1.RarEntries.Count) do
+          with Unrar1.RarEntries[i] do
+            if not IsDirectory and (SousRep or (ExtractFilePath(FileName) = '')) and FichierBon(FileName) then begin
+              Write(FOut, #1 + FileName + '|' + Path);
+              Inc(FFichiersCount);
+            end;
       finally
         Unrar1.Close;
       end;
-    end else if ext = '.zip' then begin
+    end
+    else if ext = '.zip' then begin
       ZipMaster1.ZipFileName := Path;
       ZipMaster1.FSpecArgs.Clear;
       // ZipMaster1.List;
-      for i := 0 to Pred(ZipMaster1.Count) do with ZipMaster1.DirEntry[i]^ do
-        if (SousRep or (ExtractFilePath(FileName) = '')) and FichierBon(FileName) then begin
-          Write(FOut, #1 + FileName + '|' + Path);
-          Inc(FFichiersCount);
-        end;
+      for i := 0 to Pred(ZipMaster1.Count) do
+        with ZipMaster1.DirEntry[i]^ do
+          if (SousRep or (ExtractFilePath(FileName) = '')) and FichierBon(FileName) then begin
+            Write(FOut, #1 + FileName + '|' + Path);
+            Inc(FFichiersCount);
+          end;
     end;
   end;
 
-  procedure Scan(Path: String; SousRep: Boolean);
+  procedure Scan(Path: string; SousRep: Boolean);
   var
     rec: TSearchRec;
     resultat: Integer;
@@ -329,12 +350,13 @@ var
       while resultat = 0 do begin
         if (rec.Attr and faDirectory > 0) then begin
           if (rec.Name <> '.') and (rec.Name <> '..') and SousRep then Scan(Path + rec.Name, SousRep);
-        end else
-          if FichierBon(Path + rec.Name) then begin
-            Write(FOut, #1 + Path + rec.Name);
-            Inc(FFichiersCount);
-          end else
-            if IsArchive(Path + rec.Name) then ScanArchive(Path + rec.Name, True);
+        end
+        else if FichierBon(Path + rec.Name) then begin
+          Write(FOut, #1 + Path + rec.Name);
+          Inc(FFichiersCount);
+        end
+        else if IsArchive(Path + rec.Name) then
+          ScanArchive(Path + rec.Name, True);
         resultat := FindNext(rec);
       end;
       FindClose(rec);
@@ -351,8 +373,10 @@ begin
     Rewrite(FOut);
     FFichiersCount := 0;
     for i := 0 to Pred(Length(FOptions.Images)) do
-      if FOptions.Images[i].Archive then ScanArchive(FOptions.Images[i].Chemin, FOptions.Images[i].SousRepertoire)
-                                    else Scan(FOptions.Images[i].Chemin, FOptions.Images[i].SousRepertoire);
+      if FOptions.Images[i].Archive then
+        ScanArchive(FOptions.Images[i].Chemin, FOptions.Images[i].SousRepertoire)
+      else
+        Scan(FOptions.Images[i].Chemin, FOptions.Images[i].SousRepertoire);
   finally
     CloseFile(FOut);
   end;
@@ -366,20 +390,95 @@ begin
     2: Result := ChangerMaintenant;
     3: Result := SelectionImage;
     4: Result := Rafraichir;
-    else Result := nil;
+    5: Result := ExecCommandePlugin;
+    else
+      Result := nil;
   end;
   Changermaintenant1.Default := Result = ChangerMaintenant;
   Slectionneruneimage1.Default := Result = SelectionImage;
   Options1.Default := Result = Options;
-  Rafraichir1.Default := Result = Options;
+  Rafraichir1.Default := Result = Rafraichir;
+end;
+
+function TFond.FindIndexPluginCommande(Ident: string): Integer;
+var
+  i, Commande: Integer;
+begin
+  Result := -1;
+  Ident := Trim(UpperCase(Ident));
+  if Ident = '' then Exit;
+  i := LastDelimiter('\', Ident);
+  Commande := StrToIntDef(Copy(Ident, Succ(i), Length(Ident)), -1);
+  Ident := Copy(Ident, 1, Pred(i));
+  if (Trim(Ident) = '') or (Commande = -1) then Exit;
+  for i := 0 to Pred(Length(PluginCommandes)) do
+    with PluginCommandes[i] do
+      if (UpperCase(ExtractFileName(Plugin.Chemin)) = Ident) and Plugin.Actif and (IdCommande = Commande) then begin
+        Result := i;
+        Exit;
+      end;
+end;
+
+procedure TFond.ExecutePluginCommande(IdPluginCommande: Integer);
+var
+  IPC: IInterfacePluginCommandes;
+begin
+  if not (IdPluginCommande in [0..Length(PluginCommandes)]) then Exit;
+  with PluginCommandes[IdPluginCommande].Plugin^ do
+    if Actif and not Bool(Plugin.QueryInterface(IInterfacePluginCommandes, IPC)) then
+      IPC.ExecuteCommande(PluginCommandes[IdPluginCommande].IdCommande, MainProg.OptionsWriter);
+end;
+
+procedure TFond.ExecCommandePluginExecute(Sender: TObject);
+begin
+  ExecutePluginCommande(FindIndexPluginCommande(FOptions.ActionPluginDoubleClick));
+end;
+
+procedure TFond.MenuItemExecPluginCommandeClick(Sender: TObject);
+begin
+  if not (Sender is TMenuItem) then Exit;
+  ExecutePluginCommande(TMenuItem(Sender).Tag);
 end;
 
 procedure TFond.LoadOptions;
 var
-  i: Integer;
+  i, IndexMnu, nbCommandes: Integer;
+  Commandes: array of RInfoCommande;
+  MenuItem: TMenuItem;
   slExtensions: TStringList;
+  IPC: IInterfacePluginCommandes;
 begin
   UOptions.LoadOptions(FOptions, FDebug, Self);
+
+  SetLength(PluginCommandes, 0);
+  IndexMnu := PopupMenu1.Items.IndexOf(N5) + 1;
+  while PopupMenu1.Items[IndexMnu] <> N6 do
+    PopupMenu1.Items.Delete(IndexMnu);
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IInterfacePluginCommandes, IPC)) then begin
+        nbCommandes := 16;
+        SetLength(Commandes, nbCommandes);
+        IPC.GetCommandes(nbCommandes, Commandes);
+        if nbCommandes < 0 then begin
+          nbCommandes := -nbCommandes;
+          SetLength(Commandes, nbCommandes);
+          IPC.GetCommandes(nbCommandes, Commandes);
+        end;
+        Dec(nbCommandes);
+        while nbCommandes > -1 do begin
+          MenuItem := TMenuItem.Create(Self);
+          MenuItem.Caption := Plugin.GetName + ' -> ' + Commandes[nbCommandes].MenuLabel;
+          MenuItem.Tag := Length(PluginCommandes);
+          SetLength(PluginCommandes, MenuItem.Tag + 1);
+          PluginCommandes[MenuItem.Tag].Plugin := @FOptions.Plugins[i];
+          PluginCommandes[MenuItem.Tag].IdCommande := Commandes[nbCommandes].IdCommande;
+          MenuItem.OnClick := MenuItemExecPluginCommandeClick;
+          MenuItem.Default := MenuItem.Tag = FindIndexPluginCommande(FOptions.ActionPluginDoubleClick);
+          PopupMenu1.Items.Insert(IndexMnu, MenuItem);
+          Dec(nbCommandes);
+        end;
+      end;
 
   if Assigned(FThreadCheckTime) then FThreadCheckTime.Terminate;
 
@@ -408,8 +507,10 @@ end;
 procedure TFond.Timer1Timer(Sender: TObject);
 begin
   if (Sender is TThread) and FDebug.ChangementHeureFixe and FDebug.Effacer then WriteLog('Thread CheckTime - Déclenchement');
-  if (Sender is TThread) then ChangeWallPap(ctProgramme, Activ1.Checked, not TThreadCheckTime(Sender).FCheckExclusions)
-                         else ChangeWallPap(ctAutomatique, Activ1.Checked);
+  if (Sender is TThread) then
+    ChangeWallPap(ctProgramme, Activ1.Checked, not TThreadCheckTime(Sender).FCheckExclusions)
+  else
+    ChangeWallPap(ctAutomatique, Activ1.Checked);
 end;
 
 function TFond.ExtraitArchive(var Image: string; out Archive, Fichier: string): Boolean;
@@ -435,7 +536,8 @@ begin
           WriteLog('Lecture du fichier image - ' + E.ClassName + #13#10 + Exception(ExceptObject).Message);
           Exit;
         end;
-        else raise;
+        else
+          raise;
       end;
       Unrar1.FileMask := ChangeFileExt(ExtractFileName(Fichier), '.leg');
       Unrar1.PathDest := FPathTemp + 'WallPepper\';
@@ -446,7 +548,8 @@ begin
           WriteLog('Lecture du fichier image - ' + E.ClassName + #13#10 + Exception(ExceptObject).Message);
           Exit;
         end;
-        else raise;
+        else
+          raise;
       end;
       Unrar1.FileMask := ExtractFileName(Fichier);
       Unrar1.PathDest := FPathTemp + 'WallPepper\';
@@ -457,7 +560,8 @@ begin
           WriteLog('Lecture du fichier image - ' + E.ClassName + #13#10 + Exception(ExceptObject).Message);
           Exit;
         end;
-        else raise;
+        else
+          raise;
       end;
       Image := Unrar1.PathDest + ExtractFileName(Fichier);
       Result := True;
@@ -466,7 +570,8 @@ begin
       Unrar1.FileMask := '';
       Unrar1.PathMask := '';
     end;
-  end else if (ext = '.zip') then begin
+  end
+  else if (ext = '.zip') then begin
     try
       ZipMaster1.ZipFileName := Archive;
       ZipMaster1.FSpecArgs.Add(Fichier);
@@ -487,14 +592,18 @@ end;
 procedure TFond.WriteImageLog(i: Integer; Fichier: string);
 begin
   if FDebug.DetailRechercheImage then begin
-    if (i <> 0) and (not FileExists(Copy(Fichier, Succ(i), Length(Fichier)))) then WriteLog('Fichier image trouvé: ' + Fichier + ' (archive inexistante)')
-    else if (i = 0) and (not FileExists(Fichier)) then WriteLog('Fichier image trouvé: ' + Fichier + ' (inexistant)')
-    else if (FHistorique.IndexOf(Fichier) <> -1) then WriteLog('Fichier image trouvé: ' + Fichier + ' (dans l''historique)')
-    else WriteLog('Fichier image trouvé: ' + Fichier);
+    if (i <> 0) and (not FileExists(Copy(Fichier, Succ(i), Length(Fichier)))) then
+      WriteLog('Fichier image trouvé: ' + Fichier + ' (archive inexistante)')
+    else if (i = 0) and (not FileExists(Fichier)) then
+      WriteLog('Fichier image trouvé: ' + Fichier + ' (inexistant)')
+    else if (FHistorique.IndexOf(Fichier) <> -1) then
+      WriteLog('Fichier image trouvé: ' + Fichier + ' (dans l''historique)')
+    else
+      WriteLog('Fichier image trouvé: ' + Fichier);
   end;
 end;
 
-function TFond.ChooseImage: String;
+function TFond.ChooseImage: string;
 var
   m: Integer;
   F: TFileOfByte;
@@ -514,7 +623,8 @@ var
     end;
 
     m := Length(s);
-    while s[m] in ['"', #13, #10] do Dec(m);
+    while s[m] in ['"', #13, #10] do
+      Dec(m);
     SetLength(s, m);
     if s[1] = '"' then s := Copy(s, 2, Length(s));
 
@@ -524,7 +634,7 @@ var
   function ChercheFichier: string;
   begin
     m := FileSize(F);
-//    p := Random(m);
+    //    p := Random(m);
     p := GetRNDInt(m);
     if FDebug.DetailRechercheImage then WriteLog(Format('ChercheFichier - p:%d m:%d', [p, m]));
     Seek(F, p);
@@ -549,7 +659,7 @@ begin
       Fichier := ChercheFichier;
       i := Pos('|', Fichier);
       WriteImageLog(i, Fichier);
-    until not( (((i <> 0) and (not FileExists(Copy(Fichier, Succ(i), Length(Fichier))))) or ((i = 0) and (not FileExists(Fichier)))) or ((FHistorique.Count < FFichiersCount) and (FHistorique.IndexOf(Fichier) <> -1)) );
+    until not ((((i <> 0) and (not FileExists(Copy(Fichier, Succ(i), Length(Fichier))))) or ((i = 0) and (not FileExists(Fichier)))) or ((FHistorique.Count < FFichiersCount) and (FHistorique.IndexOf(Fichier) <> -1)));
   finally
     CloseFile(F);
   end;
@@ -596,13 +706,14 @@ begin
           if Archive <> '' then Image := Archive + '|' + Fichier;
           i := Pos('|', Image);
           WriteImageLog(i, Image);
-          if not( (((i <> 0) and (not FileExists(Fichier))) or ((i = 0) and (not FileExists(Image)))) or ((FHistorique.Count < FFichiersCount) and (FHistorique.IndexOf(Image) <> -1)) ) then Break;
+          if not ((((i <> 0) and (not FileExists(Fichier))) or ((i = 0) and (not FileExists(Image)))) or ((FHistorique.Count < FFichiersCount) and (FHistorique.IndexOf(Image) <> -1))) then Break;
           // limiter à X recherches pour éviter les boucles infinies
           Inc(Boucle);
           if (Boucle > 10) or not PluginForcerImage(Archive, Fichier, UseHistorique) then Exit;
         end;
         i := 0;
-      end else begin
+      end
+      else begin
         (Self as IEvenements).DebutRechercheFond;
         try
           UseHistorique := True;
@@ -630,7 +741,8 @@ begin
           FCurrentArchive := Archive;
           FCurrentImage := Fichier;
           FImage := FCurrentImage + '|' + FCurrentArchive;
-        end else begin
+        end
+        else begin
           FCurrentArchive := '';
           FCurrentImage := Image;
           FImage := Image;
@@ -645,7 +757,8 @@ begin
       InitCheckThread;
     finally
       FreeLibrary(hdl);
-    end else
+    end
+    else
       RaiseLastOSError;
   finally
     Working := False;
@@ -656,6 +769,7 @@ end;
 procedure TFond.FormDestroy(Sender: TObject);
 begin
   (Self as IEvenements).FermetureWP;
+  SetLength(PluginCommandes, 0);
   UnloadPlugins(FOptions.Plugins);
   TrayIcon1.Active := False;
   if FileExists(FListFichiers) then DeleteFile(FListFichiers);
@@ -683,13 +797,15 @@ begin
   FinTimer := -1;
   if Assigned(FThreadCheckTime) then
     FinThread := FThreadCheckTime.FHeurePrevue;
-  if Timer1.Enabled then 
+  if Timer1.Enabled then
     FinTimer := FLastChange + MyEncodeTime(FOptions.Interval);
-  if (FinTimer > FinThread) and (FinThread <> -1) then Fin := FinThread
-                                                  else Fin := FinTimer;
+  if (FinTimer > FinThread) and (FinThread <> -1) then
+    Fin := FinThread
+  else
+    Fin := FinTimer;
 
   if Fin > -1 then begin
-    TempsRestant :=  Fin - Now;
+    TempsRestant := Fin - Now;
     Chaine := Chaine + ' - Temps restant: ' + TimeToStr(TempsRestant);
   end;
   if not Activ1.Checked then Chaine := Chaine + ' - Désactivé';
@@ -719,7 +835,7 @@ function TFond.SSRunning: Boolean;
   end;
 
 var
-  ScreenSave: String;
+  ScreenSave: string;
   HdlSnapshotSystem, HdlSnapshotProcess: LongInt;
   pe32: PROCESSENTRY32;
   me32: MODULEENTRY32;
@@ -732,7 +848,8 @@ var
       if Level = 1 then begin
         WriteLog('me32.szModule: ' + StrPas(me32.szModule));
         WriteLog('me32.szExePath: ' + Fichier);
-      end else begin
+      end
+      else begin
         WriteLog('pe32.szExeFile: ' + Fichier);
       end;
     Fichier := ExtractShortPathName(Fichier);
@@ -745,8 +862,10 @@ var
     end;
     for i := 0 to Pred(Length(FOptions.Exclusions)) do
       with FOptions.Exclusions[i] do begin
-        if Repertoire then Result := Copy(ExtractLongPathName(Fichier), 1, Length(Chemin)) <> Chemin
-                      else Result := ExtractLongPathName(Fichier) <> Chemin;
+        if Repertoire then
+          Result := Copy(ExtractLongPathName(Fichier), 1, Length(Chemin)) <> Chemin
+        else
+          Result := ExtractLongPathName(Fichier) <> Chemin;
         if not Result then Break;
       end;
     if not Result then begin
@@ -769,23 +888,23 @@ begin
       if Process32First(HdlSnapshotSystem, pe32) then
         repeat
           if FDebug.ListeProcess then WriteLog(StrPas(pe32.szExeFile));
-//          if ContinueScan(StrPas(pe32.szExeFile)) then begin
-            HdlSnapshotProcess := CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pe32.th32ProcessID);
-            if (HdlSnapshotProcess <> -1) then begin
-              try
-                FillMemory(@me32, SizeOf(MODULEENTRY32), 0);
-                me32.dwSize := SizeOf(MODULEENTRY32);
-                if (Module32First(HdlSnapshotProcess, me32)) then begin
-                  repeat
-                    Result := not ContinueScan(me32.szExePath, 1);
-                  until (Result or not Module32Next(HdlSnapshotProcess, me32));
-                end;
-              finally
-                CloseHandle(HdlSnapshotProcess);
+          //          if ContinueScan(StrPas(pe32.szExeFile)) then begin
+          HdlSnapshotProcess := CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pe32.th32ProcessID);
+          if (HdlSnapshotProcess <> -1) then begin
+            try
+              FillMemory(@me32, SizeOf(MODULEENTRY32), 0);
+              me32.dwSize := SizeOf(MODULEENTRY32);
+              if (Module32First(HdlSnapshotProcess, me32)) then begin
+                repeat
+                  Result := not ContinueScan(me32.szExePath, 1);
+                until (Result or not Module32Next(HdlSnapshotProcess, me32));
               end;
+            finally
+              CloseHandle(HdlSnapshotProcess);
             end;
-//          end else
-//            Result := True;
+          end;
+          //          end else
+          //            Result := True;
         until Result or not Process32Next(HdlSnapshotSystem, pe32);
     finally
       CloseHandle(HdlSnapshotSystem);
@@ -816,8 +935,10 @@ begin
   with TRegistry.Create do try
     RootKey := HKEY_CURRENT_USER;
     if OpenKey('Software\Microsoft\Windows\CurrentVersion\Run', True) then
-      if FOptions.DemarrageWindows then WriteString('WallPepper', Application.ExeName)
-                                   else DeleteValue('WallPepper');
+      if FOptions.DemarrageWindows then
+        WriteString('WallPepper', Application.ExeName)
+      else
+        DeleteValue('WallPepper');
   finally
     Free;
   end;
@@ -868,8 +989,10 @@ end;
 procedure TFond.Activ1Click(Sender: TObject);
 begin
   if Assigned(FThreadCheckTime) then
-    if Activ1.Checked then FThreadCheckTime.Resume
-                      else FThreadCheckTime.Suspend;
+    if Activ1.Checked then
+      FThreadCheckTime.Resume
+    else
+      FThreadCheckTime.Suspend;
 end;
 
 procedure TFond.InitCheckThread;
@@ -923,8 +1046,9 @@ begin
     FThreadCheckTime.FHeurePrevue := TimeCheck;
     FThreadCheckTime.FCheckExclusions := CheckExclusions;
     if Activ1.Checked then FThreadCheckTime.Resume;
-  end else
-    if FDebug.ChangementHeureFixe then WriteLog('Thread CheckTime - Pas d''horaires');
+  end
+  else if FDebug.ChangementHeureFixe then
+    WriteLog('Thread CheckTime - Pas d''horaires');
 
   if FDebug.ChangementHeureFixe then WriteLog('Thread CheckTime - OK');
 end;
@@ -990,7 +1114,8 @@ begin
     end;
   finally
     FreeLibrary(hdl);
-  end else
+  end
+  else
     RaiseLastOSError;
 end;
 
@@ -1032,14 +1157,17 @@ begin
     ZeroMemory(@Fichier[0], SizeOf(Fichier));
     ZeroMemory(@Archive[0], SizeOf(Archive));
     if fSelectImage(PChar(FListFichiers), Fichier, Archive, Self) then begin
-      if StrPas(Archive) <> '' then Image := StrPas(Fichier) + '|' + StrPas(Archive)
-                               else Image := StrPas(Fichier);
+      if StrPas(Archive) <> '' then
+        Image := StrPas(Fichier) + '|' + StrPas(Archive)
+      else
+        Image := StrPas(Fichier);
       if Image = '' then Image := FImage;
       ChangeWallPap(ctManuel, True, True, Image);
     end;
   finally
     FreeLibrary(hdl);
-  end else
+  end
+  else
     RaiseLastOSError;
 end;
 
@@ -1066,7 +1194,7 @@ end;
 
 procedure TFond.ChoisirImageExecute(Sender: TObject);
 begin
-  if OpenPictureDialog1.Execute then ChangeWallPap(ctManuel, True, True, OpenPictureDialog1.FileName);  
+  if OpenPictureDialog1.Execute then ChangeWallPap(ctManuel, True, True, OpenPictureDialog1.FileName);
 end;
 
 function TFond.PluginsCanChange(Declenchement: TChangeType; Exclusion: Boolean): Boolean;
@@ -1075,14 +1203,15 @@ var
   IC: IChange;
 begin
   Result := True;
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IChange, IC)) then begin
-      Result := IC.CanChange(Declenchement, Exclusion);
-      if not Result then begin
-        WriteLog('Changement refusé par le plugin ' + Plugin.GetName);
-        Break;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IChange, IC)) then begin
+        Result := IC.CanChange(Declenchement, Exclusion);
+        if not Result then begin
+          WriteLog('Changement refusé par le plugin ' + Plugin.GetName);
+          Break;
+        end;
       end;
-    end;
 end;
 
 function TFond.PluginsForceChange(Declenchement: TChangeType; Exclusion: Boolean): Boolean;
@@ -1091,14 +1220,15 @@ var
   IC: IChange;
 begin
   Result := False;
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IChange, IC)) then begin
-      Result := IC.ForceChange(Declenchement, Exclusion);
-      if Result then begin
-        WriteLog('Changement forcé par le plugin ' + Plugin.GetName);
-        Break;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IChange, IC)) then begin
+        Result := IC.ForceChange(Declenchement, Exclusion);
+        if Result then begin
+          WriteLog('Changement forcé par le plugin ' + Plugin.GetName);
+          Break;
+        end;
       end;
-    end;
 end;
 
 function TFond.PluginsValiderImage(Image: PAnsiChar; Archive: PAnsiChar; var AutreImage: Boolean): Boolean; stdcall;
@@ -1107,14 +1237,15 @@ var
   IVI: IValideImage;
 begin
   Result := True;
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IValideImage, IVI)) then begin
-      Result := IVI.IsValide(Image, Archive, AutreImage);
-      if not Result then begin
-        if FDebug.DetailRechercheImage then WriteLog('Image refusée par le plugin ' + Plugin.GetName);
-        Break;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IValideImage, IVI)) then begin
+        Result := IVI.IsValide(Image, Archive, AutreImage);
+        if not Result then begin
+          if FDebug.DetailRechercheImage then WriteLog('Image refusée par le plugin ' + Plugin.GetName);
+          Break;
+        end;
       end;
-    end;
 end;
 
 function TFond.PluginForcerImage(var Archive, Fichier: string; out UseHistorique: Boolean): Boolean;
@@ -1124,18 +1255,19 @@ var
   IFI: IForceImage;
 begin
   Result := False;
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IForceImage, IFI)) then begin
-      sArchive := Archive;
-      sFichier := Fichier;
-      Result := IFI.ForceImage(sFichier, sArchive, UseHistorique);
-      if Result then begin
-        Archive := sArchive;
-        Fichier := sFichier;
-        WriteLog('Image forcée par le plugin ' + Plugin.GetName);
-        Break;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IForceImage, IFI)) then begin
+        sArchive := Archive;
+        sFichier := Fichier;
+        Result := IFI.ForceImage(sFichier, sArchive, UseHistorique);
+        if Result then begin
+          Archive := sArchive;
+          Fichier := sFichier;
+          WriteLog('Image forcée par le plugin ' + Plugin.GetName);
+          Break;
+        end;
       end;
-    end;
 end;
 
 procedure TFond.Vrifierlaversion1Click(Sender: TObject);
@@ -1157,10 +1289,11 @@ var
 begin
   LoadOptions;
   if PluginsInclus then begin
-    for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-      if Actif and not Bool(Plugin.QueryInterface(IConfiguration, IC)) then
-        IC.RelireOptions(MainProg.OptionsWriter);
-    end;
+    for i := 0 to Pred(Length(FOptions.Plugins)) do
+      with FOptions.Plugins[i] do
+        if Actif and not Bool(Plugin.QueryInterface(IConfiguration, IC)) then
+          IC.RelireOptions(MainProg.OptionsWriter);
+  end;
 end;
 
 procedure TFond.ChangerFond(Exclusions: Boolean);
@@ -1187,9 +1320,10 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.ApresApplicationNouveauFond;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.ApresApplicationNouveauFond;
 end;
 
 procedure TFond.AvantApplicationNouveauFond;
@@ -1197,9 +1331,10 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.AvantApplicationNouveauFond;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.AvantApplicationNouveauFond;
 end;
 
 procedure TFond.DebutDessinFond(Dessineur: IDessineur);
@@ -1207,9 +1342,10 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.DebutDessinFond(Dessineur);
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.DebutDessinFond(Dessineur);
 end;
 
 procedure TFond.DebutRechercheFond;
@@ -1217,9 +1353,10 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.DebutRechercheFond;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.DebutRechercheFond;
 end;
 
 procedure TFond.DemarrageWP;
@@ -1227,9 +1364,10 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.DemarrageWP;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.DemarrageWP;
 end;
 
 procedure TFond.FermetureWP;
@@ -1237,9 +1375,10 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.FermetureWP;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.FermetureWP;
 end;
 
 procedure TFond.FinDessinFond(Dessineur: IDessineur);
@@ -1247,9 +1386,10 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.FinDessinFond(Dessineur);
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.FinDessinFond(Dessineur);
 end;
 
 procedure TFond.FinRechercheFond;
@@ -1257,14 +1397,16 @@ var
   i: Integer;
   IE: IEvenements;
 begin
-  for i := 0 to Pred(Length(FOptions.Plugins)) do with FOptions.Plugins[i] do
-    if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
-      IE.FinRechercheFond;
+  for i := 0 to Pred(Length(FOptions.Plugins)) do
+    with FOptions.Plugins[i] do
+      if Actif and not Bool(Plugin.QueryInterface(IEvenements, IE)) then
+        IE.FinRechercheFond;
 end;
 
 procedure TFond.RafraichirExecute(Sender: TObject);
 begin
-  RafraichirFond(False); 
+  RafraichirFond(False);
 end;
 
 end.
+

@@ -101,7 +101,7 @@ DebugSourceDirs=
 UsePackages=0
 [Parameters]
 RunParams=
-HostApplication=
+HostApplication=G:\Programmation\MEDIA.KIT\WallPap 1.0\WallPepper.exe
 Launcher=
 UseLauncher=0
 DebugCWD=

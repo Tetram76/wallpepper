@@ -2,6 +2,8 @@ unit UInterfacePluginCommandes;
 
 interface
 
+uses UInterfacePlugin;
+
 type
   RInfoCommande = record
     IdCommande: Integer;
@@ -14,9 +16,9 @@ type
     // si la taille est insuffisante, la procedure doit indiquer dans Count la taille necessaire en retournant une valeur négative
     // dans ce cas, le contenu de Commandes n'est pas utilisé et le tableau peut être réinitialisé par l'application
     // la commande sera de nouveau appelée avec un tableau initialisé à la taille demandée
-    procedure GetCommandes(var Count: Integer; Commandes: array of RInfoCommande); stdcall;
+    procedure GetCommandes(var Count: Integer; var Commandes: array of RInfoCommande); stdcall;
     // IdCommande a la valeur indiquée dans le tableau retournée par GetCommandes
-    procedure ExecuteCommande(IdCommande: Integer); stdcall;
+    procedure ExecuteCommande(IdCommande: Integer; Writer: IOptionsWriter); stdcall;
   end;
 
 implementation

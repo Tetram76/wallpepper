@@ -52,7 +52,7 @@ object Fond: TFond
     Top = 0
     Width = 441
     Height = 369
-    ActivePage = TabSheet3
+    ActivePage = TabSheet1
     MultiLine = True
     TabOrder = 2
     object TabSheet1: TTabSheet
@@ -61,11 +61,11 @@ object Fond: TFond
         Left = 0
         Top = 57
         Width = 433
-        Height = 45
+        Height = 66
       end
       object Bevel9: TBevel
         Left = 0
-        Top = 172
+        Top = 194
         Width = 433
         Height = 64
       end
@@ -261,13 +261,13 @@ object Fond: TFond
       object Label36: TLabel
         Left = 16
         Top = 77
-        Width = 116
+        Width = 110
         Height = 13
-        Caption = 'Action sur double-clique:'
+        Caption = 'Action sur double-click:'
       end
       object Label44: TLabel
         Left = 8
-        Top = 175
+        Top = 197
         Width = 118
         Height = 13
         Caption = 'Redimensionnement:'
@@ -280,13 +280,13 @@ object Fond: TFond
       end
       object Bevel1: TBevel
         Left = 0
-        Top = 105
+        Top = 127
         Width = 433
         Height = 64
       end
       object Label81: TLabel
         Left = 8
-        Top = 109
+        Top = 131
         Width = 45
         Height = 13
         Caption = 'Priorit'#233':'
@@ -299,7 +299,7 @@ object Fond: TFond
       end
       object Label83: TLabel
         Left = 24
-        Top = 125
+        Top = 147
         Width = 169
         Height = 26
         Caption = 
@@ -319,7 +319,7 @@ object Fond: TFond
       end
       object cAliasing: TCheckBox
         Left = 16
-        Top = 195
+        Top = 217
         Width = 129
         Height = 17
         Caption = 'Anti-aliasing (plus lent)'
@@ -349,12 +349,14 @@ object Fond: TFond
         Style = csDropDownList
         ItemHeight = 13
         TabOrder = 3
+        OnChange = cActionDoubleClickChange
         Items.Strings = (
           'Rien'
           'Options'
           'Changer l'#39'image'
           'S'#233'lectionner une image'
-          'Rafraichir')
+          'Rafraichir'
+          'Commande plugin')
       end
       object Panel4: TPanel
         Left = 0
@@ -398,7 +400,7 @@ object Fond: TFond
       end
       object Panel6: TPanel
         Left = 192
-        Top = 193
+        Top = 215
         Width = 201
         Height = 42
         BevelOuter = bvNone
@@ -432,7 +434,7 @@ object Fond: TFond
       end
       object cPriorite: TComboBox
         Left = 224
-        Top = 133
+        Top = 155
         Width = 145
         Height = 21
         Style = csDropDownList
@@ -448,6 +450,22 @@ object Fond: TFond
           'Haute'
           'Tr'#232's haute'
           'Maximale')
+      end
+      object cActionPluginDoubleClick: TComboBox
+        Left = 224
+        Top = 97
+        Width = 145
+        Height = 21
+        Style = csDropDownList
+        ItemHeight = 13
+        TabOrder = 8
+        Items.Strings = (
+          'Rien'
+          'Options'
+          'Changer l'#39'image'
+          'S'#233'lectionner une image'
+          'Rafraichir'
+          'Commande plugin')
       end
     end
     object TabSheet7: TTabSheet

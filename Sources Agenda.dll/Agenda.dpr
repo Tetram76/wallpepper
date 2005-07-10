@@ -3,8 +3,9 @@ library Agenda;
 uses
   UInterfacePlugIn in '..\SDK\UInterfacePlugIn.pas',
   UInterfaceDessinCalendrier in '..\SDK\UInterfaceDessinCalendrier.pas',
-  UMain in 'UMain.pas',
-  UInterfacePluginCommandes in '..\SDK\UInterfacePluginCommandes.pas';
+  UMain in 'UMain.pas' {FMain},
+  UInterfacePluginCommandes in '..\SDK\UInterfacePluginCommandes.pas',
+  UPlanner in 'UPlanner.pas' {FrmPlanner};
 
 {$R *.res}
 

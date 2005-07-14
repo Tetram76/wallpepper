@@ -1,10 +1,10 @@
 object FrmPlanner: TFrmPlanner
-  Left = 446
-  Top = 231
+  Left = 225
+  Top = 167
   BorderStyle = bsDialog
   Caption = 'FrmPlanner'
-  ClientHeight = 443
-  ClientWidth = 658
+  ClientHeight = 653
+  ClientWidth = 863
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -20,9 +20,9 @@ object FrmPlanner: TFrmPlanner
   object PageControl1: TPageControl
     Left = 0
     Top = 0
-    Width = 658
-    Height = 408
-    ActivePage = TabSheet2
+    Width = 863
+    Height = 618
+    ActivePage = TabSheet1
     Align = alClient
     MultiLine = True
     TabOrder = 0
@@ -32,8 +32,8 @@ object FrmPlanner: TFrmPlanner
       object DBPlanner1: TDBPlanner
         Left = 0
         Top = 0
-        Width = 631
-        Height = 400
+        Width = 836
+        Height = 610
         ActiveDisplay = True
         Align = alClient
         AttachementGlyph.Data = {
@@ -232,7 +232,7 @@ object FrmPlanner: TFrmPlanner
         Footer.Visible = False
         GradientHorizontal = False
         GridLeftCol = 1
-        GridTopRow = 3
+        GridTopRow = 16
         GroupGapOnly = False
         Header.Alignment = taCenter
         Header.Captions.Strings = (
@@ -374,8 +374,8 @@ object FrmPlanner: TFrmPlanner
       object DBPlannerMonthView1: TDBPlannerMonthView
         Left = 0
         Top = 0
-        Width = 631
-        Height = 400
+        Width = 836
+        Height = 610
         Cursor = crDefault
         Align = alClient
         AttachementGlyph.Data = {
@@ -390,6 +390,7 @@ object FrmPlanner: TFrmPlanner
         AutoInsDel = True
         BackgroundPosition = bpTiled
         BevelOuter = bvNone
+        BorderWidth = 1
         BorderXP = True
         CaptionColor = clNone
         CaptionColorTo = clNone
@@ -645,8 +646,8 @@ object FrmPlanner: TFrmPlanner
       object TodoList1: TDBTodoList
         Left = 0
         Top = 0
-        Width = 631
-        Height = 240
+        Width = 836
+        Height = 450
         ActiveColumnColor = clWhite
         ActiveItemColor = clNone
         ActiveItemColorTo = clNone
@@ -776,6 +777,7 @@ object FrmPlanner: TFrmPlanner
         HeaderFont.Style = []
         HeaderHeight = 22
         ItemHeight = 22
+        NullDate = 'None'
         Preview = False
         PreviewFont.Charset = DEFAULT_CHARSET
         PreviewFont.Color = clBlue
@@ -863,8 +865,8 @@ object FrmPlanner: TFrmPlanner
       end
       object Memo1: TMemo
         Left = 0
-        Top = 240
-        Width = 631
+        Top = 450
+        Width = 836
         Height = 160
         Align = alBottom
         Lines.Strings = (
@@ -875,15 +877,15 @@ object FrmPlanner: TFrmPlanner
   end
   object Panel1: TPanel
     Left = 0
-    Top = 408
-    Width = 658
+    Top = 618
+    Width = 863
     Height = 35
     Align = alBottom
     BevelOuter = bvNone
     Caption = ' '
     TabOrder = 1
     object Button3: TButton
-      Left = 579
+      Left = 731
       Top = 5
       Width = 75
       Height = 25

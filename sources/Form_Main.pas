@@ -167,6 +167,7 @@ type
     procedure MenuItemExecPluginCommandeClick(Sender: TObject);
     function FindIndexPluginCommande(Ident: string): Integer;
     procedure ExecutePluginCommande(IdPluginCommande: Integer);
+    function CheckVersion(ForceMessage: Boolean): Boolean;
   public
     { Déclarations publiques }
   end;
@@ -218,6 +219,7 @@ procedure TFond.FormCreate(Sender: TObject);
 
 var
   dummy: array[0..MAX_PATH] of Char;
+  VerifNet: Boolean;
 begin
   SetLength(PluginCommandes, 0);
 
@@ -252,8 +254,28 @@ begin
       Refresh;
     end;
     FLastChange := Now;
-    if not FDebug.ModeDebug and FOptions.ChangerDemarrage then ChangeWallPap(ctAutomatique);
   end;
+
+  case FOptions.VerifMAJDelai of
+    0: // jamais de verification
+      VerifNet := False;
+    1: // à chaque démarrage
+      VerifNet := True;
+    2: // une fois par jour
+      VerifNet := DaysBetween(Now, FOptions.LastVerifMAJ) > 0;
+    3: // une fois par semaine
+      VerifNet := WeeksBetween(Now, FOptions.LastVerifMAJ) > 0;
+    else // une fois par mois
+      VerifNet := MonthsBetween(Now, FOptions.LastVerifMAJ) > 0;
+  end;
+  if VerifNet then try
+    VerifNet := CheckVersion(False);
+    WriteIntegerOption('Divers', 'LastVerifMAJ', Trunc(Now));
+    if VerifNet then Exit;
+  except
+  end;
+
+  if not FDebug.ModeDebug and FOptions.ChangerDemarrage then ChangeWallPap(ctAutomatique);
 
   Icon.Assign(Application.Icon);
   Caption := Application.Title;
@@ -1272,7 +1294,12 @@ end;
 
 procedure TFond.Vrifierlaversion1Click(Sender: TObject);
 begin
-  CheckVersion(Application.Title, 'wallpepper', GetFichierVersion(DLLConf), True);
+  CheckVersion(True);
+end;
+
+function TFond.CheckVersion(ForceMessage: Boolean): Boolean;
+begin
+  Result := CheckVersionNet.CheckVersion(TitleAPP, 'wallpepper', GetFichierVersion(DLLConf), ForceMessage, not ForceMessage) = 1;
 end;
 
 function TFond.OptionsWriter: IOptionsWriter;

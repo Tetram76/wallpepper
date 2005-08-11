@@ -7,7 +7,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, ExtCtrls, Spin, UCommon, UOptions,
-  Registry, Menus, GraphicEx, ComCtrls, Divers, FileCtrl, Browss, CheckLst, IniFiles, UInterfacePlugIn;
+  Registry, Menus, GraphicEx, ComCtrls, Divers, FileCtrl, Browss, CheckLst, IniFiles, UInterfacePlugIn,
+  ComboCheck;
 
 type
   TFond = class(TForm)
@@ -16,16 +17,11 @@ type
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
-    Label5: TLabel;
-    cHistorique: TSpinEdit;
-    Label6: TLabel;
     Label4: TLabel;
     cRepertoires: TCheckListBox;
     Button1: TButton;
     Label8: TLabel;
     cTypesImages: TCheckListBox;
-    cAliasing: TCheckBox;
-    cDemarrageWindows: TCheckBox;
     TabSheet3: TTabSheet;
     CheckBox6: TCheckBox;
     TabSheet5: TTabSheet;
@@ -35,7 +31,6 @@ type
     Label16: TLabel;
     Button9: TButton;
     DlgBrowseDirectory1: TBrowseDirectoryDlg;
-    cActif: TCheckBox;
     Label17: TLabel;
     CheckBox8: TCheckBox;
     CheckBox9: TCheckBox;
@@ -66,12 +61,6 @@ type
     Bevel6: TBevel;
     Bevel7: TBevel;
     Label33: TLabel;
-    Bevel8: TBevel;
-    Bevel9: TBevel;
-    Bevel10: TBevel;
-    Label34: TLabel;
-    Label36: TLabel;
-    cActionDoubleClick: TComboBox;
     cTypesArchives: TCheckListBox;
     Label35: TLabel;
     Bevel11: TBevel;
@@ -113,11 +102,6 @@ type
     Label42: TLabel;
     TabSheet10: TTabSheet;
     Label43: TLabel;
-    Panel6: TPanel;
-    Label45: TLabel;
-    cResolutionBureau: TRadioButton;
-    cResolutionEcran: TRadioButton;
-    Label44: TLabel;
     TabSheet11: TTabSheet;
     cLegende_UseLegende: TCheckBox;
     PageControl3: TPageControl;
@@ -295,15 +279,35 @@ type
     cCalendrier_Avant_Max: TSpinEdit;
     Label80: TLabel;
     cCalendrier_Apres_Max: TSpinEdit;
-    Bevel1: TBevel;
-    Label81: TLabel;
-    Label83: TLabel;
-    cPriorite: TComboBox;
     Button19: TButton;
     Label84: TLabel;
     Button14: TButton;
     Button18: TButton;
+    Panel2: TPanel;
+    LightComboCheck1: TLightComboCheck;
+    Label11: TLabel;
+    Panel3: TPanel;
+    Label44: TLabel;
+    cAliasing: TCheckBox;
+    Panel6: TPanel;
+    Label45: TLabel;
+    cResolutionBureau: TRadioButton;
+    cResolutionEcran: TRadioButton;
+    Panel17: TPanel;
+    Panel18: TPanel;
     cActionPluginDoubleClick: TComboBox;
+    cActionDoubleClick: TComboBox;
+    Label36: TLabel;
+    Label34: TLabel;
+    Panel19: TPanel;
+    cActif: TCheckBox;
+    cDemarrageWindows: TCheckBox;
+    Label5: TLabel;
+    cHistorique: TSpinEdit;
+    Label6: TLabel;
+    Label81: TLabel;
+    Label83: TLabel;
+    cPriorite: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Options1Click(Sender: TObject);
@@ -522,6 +526,7 @@ begin
   cDemarrage.Checked := FOptions.ChangerDemarrage;
   cActif.Checked := FOptions.ActiveParDefaut;
   cPriorite.ItemIndex := FOptions.Priorite;
+  LightComboCheck1.Value := FOptions.VerifMAJDelai;
 
   cLegende_UseLegende.Checked := FOptions.Legende.UseLegende;
   cCalendrier_UseCalendrier.Checked := FOptions.Calendrier.UseCalendrier;
@@ -819,6 +824,7 @@ begin
     WriteInteger('Options', 'Interval', cInterval.Value);
     WriteInteger('Options', 'Historique', cHistorique.Value);
     WriteInteger('Options', 'Priorite', cPriorite.ItemIndex);
+    WriteInteger('Options', 'VerifMAJDelai', LightComboCheck1.Value);
 
     EraseSection('Calendrier\MoisEnCours');
     EraseSection('Calendrier\MoisAvant');

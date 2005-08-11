@@ -50,10 +50,10 @@ object Fond: TFond
   object Label4: TLabel
     Left = 152
     Top = 72
-    Width = 107
+    Width = 105
     Height = 13
     Cursor = crHandPoint
-    Caption = 'http://www.tetram.info'
+    Caption = 'http://www.tetram.org'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
     Font.Height = -11

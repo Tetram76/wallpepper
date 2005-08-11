@@ -207,7 +207,7 @@ end;
 
 function TPlugin.GetAuthorContact: ShortString;
 begin
-  Result := 'http://www.tetram.info';
+  Result := 'http://www.tetram.org';
 end;
 
 procedure TPlugin.GetCommandes(var Count: Integer; var Commandes: array of RInfoCommande);

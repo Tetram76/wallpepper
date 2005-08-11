@@ -48,6 +48,7 @@ Source: G:\Programmation\MEDIA.KIT\WallPap 1.0\WallPepper.exe; DestDir: {app}
 Source: G:\Programmation\MEDIA.KIT\WallPap 1.0\WPConf.dll; DestDir: {app}
 Source: G:\Programmation\MEDIA.KIT\WallPap 1.0\unrar.dll; DestDir: {app}; Flags: ignoreversion
 Source: G:\Programmation\MEDIA.KIT\WallPap 1.0\unzDll.dll; DestDir: {app}
+Source: What's New.txt; DestDir: {app}; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [INI]
@@ -61,6 +62,7 @@ Name: {userdesktop}\WallPepper; Filename: {app}\WallPepper.exe; Tasks: desktopic
 
 [Run]
 Filename: {app}\WallPepper.exe; Description: Lancer WallPepper; Flags: nowait postinstall skipifsilent
+Filename: {app}\What's New.txt; Flags: nowait shellexec skipifdoesntexist postinstall skipifsilent
 
 [UninstallDelete]
 Type: files; Name: {app}\WallPepper.url
